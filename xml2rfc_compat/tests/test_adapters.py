@@ -125,7 +125,7 @@ class XML2RFCAdaptersTestCase(TestCase):
         self._assert_is_instance_of_bibliographicitem(bibitem)
 
     def test_rfcsubseries_not_found(self):
-        adapter = RfcSubseriesAdapter(self.dirname, "bibxml9", self.rfcsubseries_ref+"1")
+        adapter = RfcSubseriesAdapter(self.dirname, "bibxml9", "RefNotFoundError")
         with self.assertRaises(RefNotFoundError):
             adapter.resolve()
 
