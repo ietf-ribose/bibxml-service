@@ -18,6 +18,7 @@ from .models import Xml2rfcItem
 
 
 def index_xml2rfc_source(
+    ds_ver: str,
     work_dirs: List[str],
     refs: Union[List[str], None],
     on_progress: Callable[[int, int], None],

@@ -730,8 +730,8 @@ def get_indexed_item(
     bibitem, errors = construct_bibitem(ref.body, strict)
 
     return IndexedBibliographicItem(
-        source=get_source_meta(dataset_id),
-        indexed_object=get_indexed_object_meta(dataset_id, ref.ref),
+        source=get_source_meta(ref),
+        indexed_object=get_indexed_object_meta(ref),
         validation_errors=errors,
         bibitem=bibitem,
     )

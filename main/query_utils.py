@@ -64,8 +64,8 @@ def compose_bibitem(
     validation_errors_encountered = False
 
     for ref in refs:
-        source = get_source_meta(ref.dataset)
-        obj = get_indexed_object_meta(ref.dataset, ref.ref)
+        source = get_source_meta(ref)
+        obj = get_indexed_object_meta(ref)
         sourced_id = f'{ref.ref}@{source.id}'
 
         bibitem, validation_errors = construct_bibitem(ref.body, strict)
