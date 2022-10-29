@@ -320,8 +320,7 @@ def index_dataset(ds_id: str, ds_version: str, relaton_path: str,
             # delete those refs from the dataset.
             missing_refs = requested_refs - indexed_refs
             (RefData.objects.
-                filter(dataset=ds_id).
-                exclude(ref__in=missing_refs).
+                filter(dataset=ds_id, ref__in=missing_refs).
                 delete())
 
         else:
