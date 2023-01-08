@@ -43,6 +43,8 @@ def remove_version(id: str) -> Tuple[str, str]:
     Extracts a version from a possibly versioned Internet Draft ID,
     and returns a 2-tuple of strings: versionless ID
     and optionally version (or None).
+
+    :raises ValueError: if given ID is not a valid Datatracker ID.
     """
 
     match = version_re.match(id)
