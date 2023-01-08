@@ -152,7 +152,11 @@ class InternetDraftsAdapter(Xml2rfcAdapter):
         ref = self.anchor
 
         self.bare_anchor = ref.removeprefix('I-D.').removeprefix('draft-')
-        unversioned, version = remove_version(self.bare_anchor)
+
+        try:
+            unversioned, version = remove_version(self.bare_anchor)
+        except ValueError:
+            unversioned, version = ref, None
 
         self.unversioned_anchor = unversioned
         self.requested_version = version
