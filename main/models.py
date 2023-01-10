@@ -3,6 +3,7 @@ from django.utils import timezone
 from django.db import models
 from django.db.models.functions import Cast
 from django.db.models.fields.json import KeyTransform
+from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVector
 
@@ -46,7 +47,7 @@ class RefData(models.Model):
     filename extension excluded. See :term:`ref`.
     """
 
-    body = models.JSONField()
+    body = models.JSONField(encoder=DjangoJSONEncoder)
     """Canonical Relaton representation of :term:`bibliographic item`.
     A dictionary that can be used to construct
     a :class:`relaton.models.bibdata.BibliographicItem` instance.
