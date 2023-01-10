@@ -132,7 +132,7 @@ def search_refs_json_repr_match(text: str, limit=None) -> QuerySet[RefData]:
     #     RefData.objects.
     #     annotate(search=SearchVector(Cast('body', TextField()))).
     #     filter(search=SearchQuery(text, search_type='websearch')).
-    #     only('ref', 'dataset', 'body').
+    #     only('ref', 'dataset', 'body', 'indexed_at', 'dataset_version').
     #     order_by('-latest_date')[:limit])
 
     return (
@@ -140,7 +140,7 @@ def search_refs_json_repr_match(text: str, limit=None) -> QuerySet[RefData]:
         filter(
             body__iregex=r'(?i)%s'
             % get_fuzzy_match_regex(text, match_sep=r'.*?')).
-        only('ref', 'dataset', 'body').
+        only('ref', 'dataset', 'body', 'indexed_at', 'dataset_version').
         order_by('-latest_date')[:limit])
 
 
@@ -177,7 +177,7 @@ def search_refs_relaton_struct(
 
     return (
         RefData.objects.filter(id__in=query).
-        only('ref', 'dataset', 'body').
+        only('ref', 'dataset', 'body', 'indexed_at', 'dataset_version').
         order_by('-latest_date')[:limit])
 
 
@@ -352,7 +352,13 @@ def search_refs_relaton_field(
             config='english',
         ))
 
-    return qs.only('ref', 'dataset', 'body')[:limit]
+    return qs.only(
+        'ref',
+        'dataset',
+        'body',
+        'indexed_at',
+        'dataset_version',
+    )[:limit]
 
 
 def search_refs_docids(*ids: Union[DocID, str]) -> QuerySet[RefData]:
