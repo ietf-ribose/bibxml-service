@@ -1,18 +1,17 @@
 """View functions for management GUI."""
 
-from typing import List, Optional
-from dataclasses import dataclass
+from typing import List
 
 from django.shortcuts import render
 from django.conf import settings
 from django.http.request import split_domain_port
 from django.http import HttpResponseNotFound
-from django.utils.timesince import timesince
 
 from sources.task_status import get_dataset_task_history
 from sources.task_status import describe_indexing_task
 from sources.task_status import list_running_tasks
-from sources.task_status import get_latest_outcome, TaskProgress
+from sources.task_status import get_indexable_source_status
+from sources.task_status import IndexableSourceStatus
 from sources import indexable
 
 
@@ -37,47 +36,13 @@ def home(request):
     ))
 
 
-@dataclass
-class IndexableSourceStatus:
-    name: str
-    status: str
-    item_count: str
-    task_id: Optional[str]
-    task_progress: Optional[TaskProgress]
-
-
 def datasets(request):
     """Indexable sources."""
 
     sources: List[IndexableSourceStatus] = []
-    for source_id, source in indexable.registry.items():
-        task = get_latest_outcome(source_id)
-
-        status: str
-        if task is None:
-            status = "status unknown"
-        elif task['progress']:
-            status = f"in progress ({task['action'] or 'N/A'})"
-        elif task['completed_at']:
-            try:
-                ago = timesince(task['completed_at'], depth=1)
-            except Exception:
-                ago = ''
-            status = (
-                f"last indexed {ago} ago "
-                f"({task['completed_at'].strftime('%Y-%m-%dT%H:%M:%SZ')})")
-        else:
-            status = "status unknown"
+    for source in indexable.registry.values():
         # TODO: Annotate/aggregate indexed item counts in management GUI?
-        sources.append(IndexableSourceStatus(
-            name=source_id,
-            status=status,
-            task_id=task['task_id'] if task else None,
-            task_progress=task['progress']
-            if task and 'progress' in task
-            else None,
-            item_count=str(source.count_indexed()),
-        ))
+        sources.append(get_indexable_source_status(source))
 
     return render(request, 'management/datasets.html', dict(
         **shared_context,

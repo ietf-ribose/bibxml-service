@@ -1,11 +1,16 @@
 """Primitives for working with indexing task status."""
 
 from typing import List, Optional, TypedDict, Union, cast
+from dataclasses import dataclass
 import time
 import datetime
 import traceback
 
 from celery.result import AsyncResult
+
+from django.utils.timesince import timesince
+
+from sources.indexable import IndexableSource
 
 from .celery import app
 from .models import SourceIndexationOutcome
@@ -126,6 +131,48 @@ def get_dataset_task_history(dataset_name, limit=10) -> \
         describe_indexing_task(tid)
         for tid in task_ids
     ], key=_sort_by_task_timestamp, reverse=True)
+
+
+@dataclass
+class IndexableSourceStatus:
+    name: str
+    status: str
+    item_count: str
+    task_id: Optional[str]
+    task_progress: Optional[TaskProgress]
+
+
+def get_indexable_source_status(
+    source: IndexableSource,
+) -> IndexableSourceStatus:
+    source_id = source.id
+    task = get_latest_outcome(source_id)
+
+    status: str
+    if task is None:
+        status = "status unknown"
+    elif task['progress']:
+        status = f"in progress ({task['action'] or 'N/A'})"
+    elif task['completed_at']:
+        try:
+            ago = timesince(task['completed_at'], depth=1)
+        except Exception:
+            ago = ''
+        status = (
+            f"last indexed {ago or 'N/A'} ago "
+            f"({task['completed_at'].strftime('%Y-%m-%dT%H:%M:%SZ')})")
+    else:
+        status = "status unknown"
+
+    return IndexableSourceStatus(
+        name=source_id,
+        status=status,
+        task_id=task['task_id'] if task else None,
+        task_progress=task['progress']
+        if task and 'progress' in task
+        else None,
+        item_count=str(source.count_indexed()),
+    )
 
 
 def get_latest_outcome(dataset_name: str) -> Optional[IndexingTaskDescription]:
