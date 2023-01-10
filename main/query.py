@@ -694,16 +694,16 @@ def build_search_results(
     results: List[FoundItem] = []
 
     for idx, ref in enumerate(refs):
+        body = ref.body or {}
         suitable_ids: List[DocID] = as_list([
             DocID(**id)
-            for id in ref.body.get('docid', [])
-            if 'id' in id and 'scope' not in id and 'type' in id
+            for id in body.get('docid', [])
+            if 'id' in id and not id.get('scope') and id.get('type')
         ])
 
         # TODO: Skip ``fallback_formattedref`` cases when #196 is confirmed
         fallback_formattedref = (
-            ref.body.
-            get('formattedref', {}).
+            (body.get('formattedref', None) or {}).
             get('content', None))
         if suitable_ids:
             primary_id = get_primary_docid(suitable_ids)
