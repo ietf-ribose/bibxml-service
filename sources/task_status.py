@@ -158,8 +158,13 @@ def get_indexable_source_status(
             ago = timesince(task['completed_at'], depth=1)
         except Exception:
             ago = ''
+        success: bool = not task['error']
+        result = (
+            'indexed' if success
+            else 'possibly incomplete indexing attempt'
+        )
         status = (
-            f"last indexed {ago or 'N/A'} ago "
+            f"last {result} {ago or 'N/A'} ago "
             f"({task['completed_at'].strftime('%Y-%m-%dT%H:%M:%SZ')})")
     else:
         status = "status unknown"
