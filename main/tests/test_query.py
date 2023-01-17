@@ -6,7 +6,6 @@ from unittest import TestCase
 from django.core.management import call_command
 from django.db.models import QuerySet, Q
 
-from bib_models import DocID
 from main.exceptions import RefNotFoundError
 from main.models import RefData
 from main.query import (

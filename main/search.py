@@ -1,6 +1,6 @@
 import re
 import json
-from typing import Any, List, Callable, Union, cast
+from typing import Any, List, Callable, Union, Optional, cast
 from urllib.parse import unquote_plus
 
 from django.http import HttpResponseBadRequest, HttpResponseRedirect
@@ -111,7 +111,7 @@ class BaseCitationSearchView(BaseListView):
 
     query_format_allow_fallback: Union[bool, None] = None
     """If True, and given query is unsuccessful, will try the next format.
-    Can be overridden with ``allow_format_callback`` GET parameter."""
+    Can be overridden with ``allow_format_fallback`` GET parameter."""
 
     query = None
     """Deserialized query, parsed from request."""
@@ -128,7 +128,7 @@ class BaseCitationSearchView(BaseListView):
     """How long to cache search results for. Results are cached as a list
     is constructed from query and query format. Default is one hour."""
 
-    metric_counter: Union[Counter, None] = None
+    metric_counter: Optional[Counter] = None
     """A Prometheus Counter instance accepting two labels,
     ``query_format`` and ``got_results``.
     """

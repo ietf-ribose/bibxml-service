@@ -2,6 +2,7 @@
 This module registers :func:`~.to_xml_string`
 in this project’s serializer registry (:mod:`bib_models.serializers`).
 """
+
 from typing import Optional, List
 
 from lxml.etree import _Element
@@ -19,6 +20,8 @@ from bib_models import serializers, BibliographicItem
 __all__ = (
     'to_xml_string',
 )
+
+from xml2rfc_compat.serializers import serialize
 
 
 def serialize(
