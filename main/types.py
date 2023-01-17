@@ -81,8 +81,9 @@ class ExternalSourceRequest(BaseModel):
 # -----------------------
 
 class IndexingOutcome(TypedDict):
-    """Indexing outcome is primarily about validation at this point,
-    but may be expanded to cover more data later.
+    """Indexing outcome for a :term:`reference`
+    is primarily about validation at this point,
+    but may be expanded to cover more information later.
 
     .. seealso::
 
