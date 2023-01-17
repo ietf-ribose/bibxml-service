@@ -298,7 +298,7 @@ def index_dataset(ds_id: str, ds_version: str, relaton_path: str,
                         bibitem = None
                         on_error(
                             ref,
-                            'Errors not resolved:\n%s'
+                            'Errors not resolved (item skipped):\n%s'
                             % err_desc)
                     # except Exception as exc:
                     #     on_error(
