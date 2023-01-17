@@ -44,5 +44,6 @@ Note: this may be caused either by malformed source data, or by this service’s
     {% else %}
       <span class="font-normal">{{ sourced_item.source.id }}</span>
     {% endif %}
+    @&nbsp;<code>{{ sourced_item.source.version|slice:":6" }}</code>
   </span>
 </span>
