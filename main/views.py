@@ -36,7 +36,6 @@ from .search import BaseCitationSearchView
 from .search import QUERY_FORMAT_LABELS
 from .exceptions import RefNotFoundError
 from .api import get_by_docid
-from datatracker import auth
 from .sources import get_source_meta
 from .types import IndexedSourceMeta
 from . import external_sources
