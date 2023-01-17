@@ -307,6 +307,10 @@ def index_dataset(ds_id: str, ds_version: str, relaton_path: str,
                     #         '(failed with %s):\n%s'
                     #         % (str(exc), err_desc))
                     else:
+                        # on_error(
+                        #     ref,
+                        #     'Loose data (had to be normalized):\n%s'
+                        #     % err_desc)
                         outcome['success'] = True
                 else:
                     outcome['success'] = True
