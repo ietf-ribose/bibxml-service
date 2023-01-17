@@ -91,9 +91,10 @@ class IndexingOutcome(TypedDict):
        in order to capture source data issues in DB.
     """
 
-    did_normalize: bool
-    """Whether indexer used :func:`bib_models.util.normalize_relaxed`
-    to attempt to resolve validation errors."""
+    success: bool
+    """Whether the reference was successfully indexed.
+    There were no validation errors or normalization eliminated them.
+    """
 
     num_validation_errors: int
     """Number of validation errors in source data
@@ -104,9 +105,10 @@ class IndexingOutcome(TypedDict):
     validation_errors: List[ValidationErrorDict]
     """List of validation errors in source data.
 
-    Some or all of the errors may be eliminated by normalizing loose YAML
+    Some or (if the ``success`` attribute is ``True``) all
+    of the errors may have been resolved by normalizing loose YAML
     and not be present at query time, but the information is still useful
-    when investigating data source issues.
+    for data source maintenance.
     """
 
 
