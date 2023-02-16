@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    relaton-cli (1.12.0)
+    relaton-cli (1.12.1)
       liquid (~> 4)
       relaton (~> 1.12.0)
       thor
@@ -248,7 +248,7 @@ GEM
     rdf-xsd (3.2.1)
       rdf (~> 3.2)
       rexml (~> 3.2)
-    relaton (1.12.0)
+    relaton (1.12Ï.0)
       relaton-3gpp (~> 1.12.0)
       relaton-bipm (~> 1.12.0)
       relaton-bsi (~> 1.12.0)
