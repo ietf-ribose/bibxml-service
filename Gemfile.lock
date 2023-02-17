@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    relaton-cli (1.12.1)
+    relaton-cli (1.12.0)
       liquid (~> 4)
       relaton (~> 1.12.0)
       thor
@@ -271,18 +271,18 @@ GEM
       relaton-omg (~> 1.12.0)
       relaton-un (~> 1.12.0)
       relaton-w3c (~> 1.12.0)
-    relaton-3gpp (1.14.3)
+    relaton-3gpp (1.12.0)
       mdb (~> 0.5.0)
       net-ftp (~> 0.1.0)
       relaton-bib (~> 1.12.0)
       rubyzip (~> 2.3.0)
-    relaton-bib (1.14.5)
+    relaton-bib (1.12.0)
       addressable
       bibtex-ruby
       htmlentities
       iso639
       nokogiri (~> 1.13.0)
-    relaton-bipm (1.14.1)
+    relaton-bipm (1.12.0)
       faraday (~> 1.0)
       mechanize (~> 2.8.0)
       relaton-bib (~> 1.12.0)
@@ -302,8 +302,8 @@ GEM
     relaton-cie (1.12.0)
       mechanize (~> 2.8.0)
       relaton-bib (~> 1.12.0)
-    relaton-doi (1.14.3)
-      relaton-bib (~> 1.14.3)
+    relaton-doi (1.12.0)
+      relaton-bib (~> 1.12.0)
       relaton-bipm (~> 1.12.0)
       relaton-ieee (~> 1.12.0)
       relaton-ietf (~> 1.12.0)
@@ -315,19 +315,19 @@ GEM
       cnccs (~> 0.1.1)
       gb-agencies (~> 0.0.1)
       relaton-iso-bib (~> 1.12.0)
-    relaton-iana (1.14.1)
+    relaton-iana (1.12.0)
       faraday (~> 1.0)
       relaton-bib (~> 1.12.0)
       ruby-jing
-    relaton-iec (1.14.1)
+    relaton-iec (1.12.0)
       addressable
       relaton-iso-bib (~> 1.12.0)
-    relaton-ieee (1.14.4)
+    relaton-ieee (1.12.0)
       faraday (~> 1.0)
       mini_portile2
       relaton-bib (~> 1.12.0)
       rubyzip (~> 2.3.0)
-    relaton-ietf (1.14.2)
+    relaton-ietf (1.12.0)
       relaton-bib (~> 1.12.0)
     relaton-iho (1.12.0)
       relaton-bib (~> 1.12.0)
@@ -341,13 +341,13 @@ GEM
     relaton-itu (1.12.0)
       mechanize (~> 2.8.0)
       relaton-bib (~> 1.12.0)
-    relaton-nist (1.14.1)
+    relaton-nist (1.12.0)
       relaton-bib (~> 1.12.0)
       rubyzip
-    relaton-oasis (1.14.2)
+    relaton-oasis (1.12.0)
       mechanize
       relaton-bib (~> 1.12.0)
-    relaton-ogc (1.14.1)
+    relaton-ogc (1.12.0)
       faraday (~> 1.0)
       relaton-iso-bib (~> 1.12.0)
     relaton-omg (1.12.0)
@@ -473,4 +473,4 @@ DEPENDENCIES
   webmock
 
 BUNDLED WITH
-   2.2.33
+   2.2.30
