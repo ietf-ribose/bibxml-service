@@ -37,7 +37,6 @@ Gem::Specification.new do |spec|
 
   spec.add_runtime_dependency "liquid", "~> 4"
   spec.add_runtime_dependency "relaton", "~> 1.14.0"
-  spec.add_runtime_dependency "relaton-cli", "~> 1.14.0"
   spec.add_runtime_dependency "thor"
   spec.add_runtime_dependency "thor-hollaback"
 end
