@@ -12,7 +12,7 @@ under ``/data/`` directory under repository root
 
 .. seealso:: :rfp:req:`3`
 """
-from typing import Tuple, List, Dict, Any, cast
+from typing import Tuple, List, Dict, Any, Set, cast
 import glob
 from os import path
 import datetime
@@ -28,9 +28,10 @@ from django.db import transaction
 from bib_models.util import normalize_relaxed
 from common.util import as_list
 from common.pydantic import ValidationErrorDict, pretty_print_loc
+from common.pydantic import unpack_dataclasses
 from sources import indexable
 
-from .types import IndexedSourceMeta, IndexedObject
+from .types import IndexedSourceMeta, IndexedObject, IndexingOutcome
 from .models import RefData
 
 
@@ -86,33 +87,51 @@ get_github_web_data_root = (
     lambda repo_home, branch:
     f'{repo_home}/tree/{branch}'
 )
+get_github_web_data_root_at_version = (
+    lambda repo_home, version:
+    f'{repo_home}/blob/{version}'
+)
 get_github_web_issues = (
     lambda repo_home:
     f'{repo_home}/issues/new'
 )
 
 
-def get_source_meta(dataset_id: str) -> IndexedSourceMeta:
-    """Should be used on ``dataset_id``
-    that represents an ietf-ribose relaton-data-* repo."""
+def noop(*args, **kwargs):
+    pass
 
-    repo_home, _ = locate_relaton_source_repo(dataset_id)
+
+def get_source_meta(ref: RefData) -> IndexedSourceMeta:
+    repo_home, _ = locate_relaton_source_repo(ref.dataset)
     repo_name = repo_home.split('/')[-1]
     repo_issues = get_github_web_issues(repo_home)
 
     return IndexedSourceMeta(
         id=repo_name,
+        version=ref.dataset_version,
         home_url=repo_home,
         issues_url=repo_issues,
     )
 
 
-def get_indexed_object_meta(dataset_id: str, ref: str) -> IndexedObject:
-    repo_home, branch = locate_relaton_source_repo(dataset_id)
-    file_url = f'{get_github_web_data_root(repo_home, branch)}/data/{ref}.yaml'
+def get_indexed_object_meta(ref: RefData) -> IndexedObject:
+    repo_home, branch = locate_relaton_source_repo(ref.dataset)
+    ver = ref.dataset_version
+    if ver := ref.dataset_version:
+        file_url = (
+            f'{get_github_web_data_root_at_version(repo_home, ver)}'
+            f'/data/{ref.ref}.yaml'
+        )
+    else:
+        file_url = (
+            f'{get_github_web_data_root(repo_home, branch)}'
+            f'/data/{ref.ref}.yaml'
+        )
+
     return IndexedObject(
-        name=ref,
+        name=ref.ref,
         external_url=file_url,
+        indexed_at=ref.indexed_at,
     )
 
 
@@ -154,13 +173,17 @@ def register_relaton_source(source_id: str):
             locate_relaton_source_repo(source_id),
         ],
     )({
-        'indexer': (lambda dirs, refs, on_progress, on_error: index_dataset(
-            source_id,
-            path.join(dirs[0], 'data'),
-            refs,
-            on_progress,
-            on_error,
-        )),
+        'indexer': (
+            lambda ds_ver, dirs, refs, on_progress, on_error:
+            index_dataset(
+                source_id,
+                ds_ver,
+                path.join(dirs[0], 'data'),
+                refs,
+                on_progress,
+                on_error,
+            )
+        ),
         'reset_index': (lambda: reset_index_for_dataset(source_id)),
         'count_indexed': (
             lambda: RefData.objects.filter(dataset=source_id).count()
@@ -175,8 +198,10 @@ for source_id in settings.RELATON_DATASETS:
 # Indexing implementation
 # =======================
 
-def index_dataset(ds_id, relaton_path, refs=None,
-                  on_progress=None, on_error=None) -> Tuple[int, int]:
+def index_dataset(ds_id: str, ds_version: str, relaton_path: str,
+                  refs=None,
+                  on_progress=None,
+                  on_error=None) -> Tuple[int, int]:
     """Indexes Relaton data into :class:`~.models.RefData` instances.
 
     :param ds_id: dataset ID as a string
@@ -194,70 +219,119 @@ def index_dataset(ds_id, relaton_path, refs=None,
         for k, v in yaml.SafeLoader.yaml_implicit_resolvers.items()
     }
 
-    report_progress = on_progress or (lambda total, current: print(
-        "Indexing {}: {} of {}".format(ds_id, total, current))
-    )
+    report_progress = on_progress or noop
+
+    indexing_subset = refs is not None
 
     requested_refs = set(refs or [])
-    indexed_refs = set()
 
     relaton_source_files = glob.glob("%s/*.yaml" % relaton_path)
 
-    total = len(relaton_source_files)
+    index_ts = datetime.datetime.now()
+
+    on_error = on_error or noop
+
+    refs_with_paths: List[Tuple[str, str]] = [
+        (ref, fpath)
+        for fpath in relaton_source_files
+        if ((ref := path.splitext(path.basename(fpath))[0])
+            and path.isfile(fpath))
+    ]
+
+    total = len(refs_with_paths)
 
     if total < 1:
-        raise RuntimeError("The source is empty")
+        raise RuntimeError("Nothing to index")
 
     report_progress(total, 0)
 
-    with transaction.atomic():
-        for idx, relaton_fpath in enumerate(relaton_source_files):
-            ref = path.splitext(path.basename(relaton_fpath))[0]
+    indexed_refs: Set[str] = set()
 
-            if refs is None or ref in requested_refs:
-                report_progress(total, idx)
+    # Does the indexing. Can be wrapped in a transaction, or not.
+    # Call this function only once.
+    def index_requested(refs_with_paths: List[Tuple[str, str]]):
+        for idx, (ref, relaton_fpath) in enumerate(refs_with_paths):
+            report_progress(total, idx)
 
-                with open(relaton_fpath, 'r', encoding='utf-8') \
-                     as relaton_fhandler:
-                    ref_data = yaml.load(
-                        relaton_fhandler.read(),
-                        Loader=yaml.SafeLoader)
+            with open(relaton_fpath, 'r', encoding='utf-8') \
+                 as relaton_fhandler:
+                ref_data = yaml.load(
+                    relaton_fhandler.read(),
+                    Loader=yaml.SafeLoader)
 
-                    latest_date = max(
-                        to_dates(as_list(ref_data.get('date', [])))
-                        or [datetime.datetime.now().date()]
+                latest_date = max(
+                    to_dates(as_list(ref_data.get('date', [])))
+                    or [index_ts.date()]
+                )
+
+                outcome = IndexingOutcome(
+                    success=False,
+                    num_validation_errors=0,
+                    validation_errors=[],
+                )
+
+                try:
+                    bibitem = BibliographicItem(**ref_data)
+
+                except ValidationError as validation_error:
+                    errs = cast(
+                        List[ValidationErrorDict],
+                        validation_error.errors(),
                     )
+                    err_desc = '\n'.join([
+                        f"{d['type']} at "
+                        f"{pretty_print_loc(d['loc'])}: {d['msg']}"
+                        for d in errs
+                    ])
+                    outcome['validation_errors'] = errs
+                    outcome['num_validation_errors'] = len(errs)
+                    try:
+                        normalize_relaxed(ref_data)
+                    except Exception as exc:
+                        on_error(
+                            ref,
+                            "Error during normalization:\n%s"
+                            % str(exc))
+                    try:
+                        bibitem = BibliographicItem(**ref_data)
+                    except ValidationError:
+                        bibitem = None
+                        on_error(
+                            ref,
+                            'Errors not resolved (item skipped):\n%s'
+                            % err_desc)
+                    # except Exception as exc:
+                    #     on_error(
+                    #         ref,
+                    #         'Errors not resolved '
+                    #         '(failed with %s):\n%s'
+                    #         % (str(exc), err_desc))
+                    else:
+                        # on_error(
+                        #     ref,
+                        #     'Loose data (had to be normalized):\n%s'
+                        #     % err_desc)
+                        outcome['success'] = True
+                else:
+                    outcome['success'] = True
 
-                    if on_error:
-                        try:
-                            BibliographicItem(**ref_data)
-                        except ValidationError as validation_error:
-                            err_desc = '\n'.join([
-                                f"{d['type']} at "
-                                f"{pretty_print_loc(d['loc'])}: {d['msg']}"
-                                for d in cast(
-                                    List[ValidationErrorDict],
-                                    validation_error.errors()
-                                )
-                            ])
-                            try:
-                                normalize_relaxed(ref_data)
-                                BibliographicItem(**ref_data)
-                            except Exception:
-                                on_error(
-                                    ref,
-                                    'Errors not resolved:\n%s' % err_desc)
-                            else:
-                                on_error(
-                                    ref,
-                                    'Errors resolved (normalized):\n%s'
-                                    % err_desc)
-
+                if bibitem:
                     RefData.objects.update_or_create(
                         ref=ref,
                         dataset=ds_id,
                         defaults=dict(
-                            body=ref_data,
+                            # NOTE: moving dataset_version outside ``defaults``
+                            # allows maintaining indexed items
+                            # for previously indexed dataset versions
+                            # but requires more complex lookups
+                            # and periodic cleanup of old versions
+                            dataset_version=ds_version,
+                            indexed_at=index_ts,
+                            indexing_outcome=outcome,
+
+                            body=unpack_dataclasses(bibitem.dict())
+                            if bibitem
+                            else ref_data,
                             latest_date=latest_date,
                             representations=dict(),
                         ),
@@ -265,23 +339,35 @@ def index_dataset(ds_id, relaton_path, refs=None,
 
                     indexed_refs.add(ref)
 
-        if refs is not None:
+    # Partial index is wrapped in a transaction,
+    # we don’t index anything if a single item fails.
+    if indexing_subset:
+        with transaction.atomic():
+            index_requested([
+                (ref, fpath)
+                for ref, fpath in refs_with_paths
+                if ref in requested_refs
+            ])
+
             # If we’re indexing a subset of refs,
             # and some of those refs were not found in source,
             # delete those refs from the dataset.
             missing_refs = requested_refs - indexed_refs
             (RefData.objects.
-                filter(dataset=ds_id).
-                exclude(ref__in=missing_refs).
+                filter(dataset=ds_id, ref__in=missing_refs).
                 delete())
 
-        else:
-            # If we’re reindexing the entire dataset,
-            # delete all refs not found in source.
-            (RefData.objects.
-                filter(dataset=ds_id).
-                exclude(ref__in=indexed_refs).
-                delete())
+    # Full index is done in batches and one item failing
+    # means preceding items may still be indexed.
+    else:
+        index_requested(refs_with_paths)
+
+        # If we’re reindexing the entire dataset,
+        # delete all refs not found in source at the end.
+        (RefData.objects.
+            filter(dataset=ds_id).
+            exclude(ref__in=[ref for (ref, fpath) in refs_with_paths]).
+            delete())
 
     return total, len(indexed_refs)
 

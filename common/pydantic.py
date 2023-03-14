@@ -1,4 +1,7 @@
-"""Pydantic-related utilities."""
+"""
+General-purpose utilities related to constructing objects
+from deserialized data using Pydantic.
+"""
 
 from typing import Any, TypeAlias, List, Tuple, Union, TypedDict, Mapping, cast
 from typing import Optional
@@ -143,6 +146,9 @@ def flatten_and_annotate(
         If the instance that you pass under ``val`` did not validate,
         pass the output
         of caught ``pydantic.ValidationError``’s ``errors()`` method here.
+    :param tuple loc:
+        It’s always set during recursion.
+        Callers are not expected to provide this argument.
 
     :returns: a list of :class:`~.AnnotatedField` instances.
 
@@ -155,6 +161,7 @@ def flatten_and_annotate(
     if not isinstance(val, Mapping) and loc is None:
         raise ValueError("flatten_hierarchy requires a mapping to start")
 
+    # Handle a mapping (dict).
     if isinstance(val, Mapping):
 
         for k, v in val.items():
@@ -168,7 +175,8 @@ def flatten_and_annotate(
                 loc=next_loc,
             ))
 
-        # We want item list to include missing fields
+        # Special branch for fields that don’t exist in source data but should.
+        # We want annotated field list to include missing fields
         # as noted by Pydantic’s validation error.
 
         # In the outer-level call, after all potential recursions…
@@ -217,11 +225,13 @@ def flatten_and_annotate(
                     # possibly a missing top-level is field, just prepend
                     items.insert(0, err_item)
 
+    # Handle a list.
     elif isinstance(val, list):
+
         enumerated: List[Any] = list(enumerate(val))
 
         # Cast, since loc is guaranteed not to be None at this point
-        # (we accept mappings only at top level):
+        # (we accept only mappings at top level):
         _parent_loc = cast(PydanticLoc, loc)
 
         if len(enumerated) > 1:
@@ -243,7 +253,10 @@ def flatten_and_annotate(
                     tuple([*_parent_loc, 0])),
             ))
 
+    # Handle a leaf primitive value.
     else:
+        # Cast, since loc is guaranteed not to be None at this point
+        # (we accept only mappings at top level):
         loc = cast(PydanticLoc, loc)
         field_errs = [
             f"{' → '.join(str(p) for p in err['loc'])}: "
@@ -254,8 +267,6 @@ def flatten_and_annotate(
         ]
         items.append({
             'validation_errors': field_errs,
-            # Cast, since loc is guaranteed not to be None at this point
-            # (we only accept mappings at top level):
             'pydantic_loc': loc,
             'value': val,
         })

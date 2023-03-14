@@ -114,6 +114,7 @@ class IndexableSourceToRegister(TypedDict, total=True):
 
     indexer: Callable[
         [
+            str,
             List[str],
             Optional[List[str]],
             Callable[[int, int], None],
@@ -122,14 +123,15 @@ class IndexableSourceToRegister(TypedDict, total=True):
         Tuple[int, int]
     ]
     """
-    A function that will receive 4 positional arguments:
+    A function that will receive 5 positional arguments:
 
-    1) a list of directories pre-filled with repository contents
+    1) dataset version, as a string
+    2) a list of directories pre-filled with repository contents
        (one for each of repository sources specified during registration),
-    2) a list of references to index (or None),
-    3) an on-progress handler that should be called
+    3) a list of references to index (or None),
+    4) an on-progress handler that should be called
        with 2 ints (total and indexed) on each indexed item,
-    4) an on-error handler that should be called
+    5) an on-error handler that should be called
        with 2 strings (problematic item name and error description).
 
     It must return a 2-tuple (number of found items, number of indexed items).
@@ -239,6 +241,7 @@ def register_git_source(source_id: str, repos: List[Tuple[str, str]]):
                     indexed,
                 ))
                 found, indexed = index_info['indexer'](
+                    repo_heads[0],
                     work_dir_paths,
                     refs,
                     on_index_progress,

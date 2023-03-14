@@ -1,6 +1,9 @@
+from django.utils import timezone
+
 from django.db import models
 from django.db.models.functions import Cast
 from django.db.models.fields.json import KeyTransform
+from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVector
 
@@ -28,6 +31,12 @@ class RefData(models.Model):
     Matches indexable source ID in :any:`RELATON_DATASETS`.
     """
 
+    dataset_version = models.CharField(
+        max_length=128,
+        db_index=True,
+        default="HEAD")
+    """Dataset version, e.g. a Git commit hash."""
+
     ref = models.CharField(
         max_length=128,
         db_index=True,
@@ -38,21 +47,30 @@ class RefData(models.Model):
     filename extension excluded. See :term:`ref`.
     """
 
-    body = models.JSONField()
-    """Canonical Relaton representation
-    of :term:`bibliographic item`.
-    Can be used to construct
+    body = models.JSONField(encoder=DjangoJSONEncoder)
+    """Canonical Relaton representation of :term:`bibliographic item`.
+    A dictionary that can be used to construct
     a :class:`relaton.models.bibdata.BibliographicItem` instance.
     May be normalized.
     """
 
     latest_date = models.DateField()
     """Latest publication or revision date found on the item.
-    Used e.g. when ordering results.
-    Do not use when displaying data, since this field does not preserve
-    specificity (use bibliographic item’s
+    Can be used e.g. when ordering results.
+    Should not be used when displaying data (use bibliographic item’s
     :attr:`~relaton.models.bibdata.BibliographicItem.date` attribute
     instead).
+    """
+
+    indexed_at = models.DateTimeField(default=timezone.now)
+    """The timestamp when this item was indexed."""
+
+    indexing_outcome = models.JSONField(default=dict)
+    """Captures indexer output in a structured way.
+    The structure here conforms to :class:`main.types.IndexingOutcome`.
+
+    An empty dictionary after migration period would imply
+    some logic error and this item may contain bad data.
     """
 
     representations = models.JSONField(default=dict)

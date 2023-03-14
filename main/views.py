@@ -1,5 +1,7 @@
 """View functions for citation retrieval GUI."""
 
+from typing import List, Tuple, Dict, cast
+
 import logging
 from math import log as log_, floor
 from urllib.parse import unquote_plus
@@ -22,6 +24,10 @@ from common.pydantic import unpack_dataclasses
 from prometheus import metrics
 from bib_models import serializers, BibliographicItem
 from xml2rfc_compat import adapters as xml2rfc_adapters
+from sources import indexable
+from datatracker import auth
+from sources.task_status import get_indexable_source_status
+from sources.task_status import IndexableSourceStatus
 
 from .models import RefData
 from .query import get_indexed_item, list_refs
@@ -30,7 +36,8 @@ from .search import BaseCitationSearchView
 from .search import QUERY_FORMAT_LABELS
 from .exceptions import RefNotFoundError
 from .api import get_by_docid
-from datatracker import auth
+from .sources import get_source_meta
+from .types import IndexedSourceMeta
 from . import external_sources
 
 
@@ -78,6 +85,29 @@ def home(request):
         **shared_context,
         total_indexed_human=total_indexed_human,
         browsable_datasets=browsable_datasets,
+    ))
+
+
+def indexed_sources(request):
+
+    refs = cast(Dict[str, RefData], dict([
+        [ref.dataset, ref]
+        for ref in RefData.objects.
+        order_by('dataset', '-indexed_at').
+        distinct('dataset')
+    ]))
+
+    sources: List[Tuple[IndexedSourceMeta, IndexableSourceStatus]] = [
+        (
+            get_source_meta(refs[source_id]),
+            get_indexable_source_status(source),
+        )
+        for source_id, source in indexable.registry.items()
+        if source_id in refs
+    ]
+
+    return render(request, 'browse/sources.html', dict(
+        sources_with_statuses=sources,
     ))
 
 

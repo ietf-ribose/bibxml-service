@@ -191,6 +191,9 @@ urlpatterns = [
         ])),
 
         path('indexed-sources/', include([
+            path('', never_cache(require_safe(
+                public_views.indexed_sources
+            )), name='browse_sources'),
             path('relaton-data-<dataset_id>/', include([
                 path('', never_cache(require_safe(
                     public_views.IndexedDatasetCitationListView.as_view()

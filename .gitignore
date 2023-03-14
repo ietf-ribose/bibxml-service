@@ -3,9 +3,9 @@
 /env
 /node_modules
 /test-artifacts
+/mypy_cache
 __pycache__
 .env
 *.pyc
 http_cache.sqlite
-.DS_Store
 .vscode

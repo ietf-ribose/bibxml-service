@@ -4,6 +4,11 @@ from django.db import models
 class SourceIndexationOutcome(models.Model):
     """
     Serves for capturing indexing outcomes for management GUI and API.
+
+    .. note::
+
+       Part of this is being moved to :class:`common.pydantic.IndexingOutcome`
+       captured on individual :class:`main.models.RefData` instances in the DB.
     """
 
     source_id = models.CharField(max_length=250, db_index=True)

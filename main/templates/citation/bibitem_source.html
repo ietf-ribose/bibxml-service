@@ -18,13 +18,14 @@ Note: this may be caused either by malformed source data, or by this service’s
     {% if sourced_item.indexed_object %}
       {% if show_internal_links %}
         <a
-          class="link"
+          class="link font-mono text-teal-400 font-bold"
           href="{% url "browse_indexed_ref" sourced_item.source.id|cut:"relaton-data-" sourced_item.indexed_object.name %}"
+          title="View indexed reference data"
         >
           {{ sourced_item.indexed_object.name }}
         </a>
       {% else %}
-        <span class="">
+        <span class="font-mono">
           {{ sourced_item.indexed_object.name }}
         </span>
       {% endif %}
@@ -32,7 +33,7 @@ Note: this may be caused either by malformed source data, or by this service’s
   {% endif %}
   <span class="font-light">
     {% if indexed %}
-      indexed from
+      from
     {% else %}
       requested via
     {% endif %}
@@ -44,5 +45,6 @@ Note: this may be caused either by malformed source data, or by this service’s
     {% else %}
       <span class="font-normal">{{ sourced_item.source.id }}</span>
     {% endif %}
+    @&nbsp;<code>{{ sourced_item.source.version|slice:":6" }}</code>
   </span>
 </span>

@@ -1,6 +1,6 @@
 """Type helpers specific to bibliographic item retrieval."""
 
-from typing import Mapping, List, Optional, Union
+from typing import Mapping, List, Optional, Union, TypedDict
 import datetime
 
 from pydantic.dataclasses import dataclass
@@ -20,6 +20,13 @@ class SourceMeta:
 
     id: str
     """Source ID."""
+
+    version: Optional[str] = None
+    """Source version, e.g. commit hash."""
+
+    latest_update: Optional[datetime.date] = None
+    """Latest update of Relaton source
+    (e.g., when it was last compiled from authoritative source)."""
 
     home_url: Optional[str] = None
     """Source dataset or external service home page."""
@@ -70,13 +77,49 @@ class ExternalSourceRequest(BaseModel):
     """Which URL was hit."""
 
 
+# Source indexing outcome
+# -----------------------
+
+class IndexingOutcome(TypedDict):
+    """Indexing outcome for a :term:`reference`
+    is primarily about validation at this point,
+    but may be expanded to cover more information later.
+
+    .. seealso::
+
+       This is intended for use with
+       :attr:`main.models.RefData.indexing_outcome`
+       in order to capture source data issues in DB.
+    """
+
+    success: bool
+    """Whether the reference was successfully indexed.
+    There were no validation errors or normalization eliminated them.
+    """
+
+    num_validation_errors: int
+    """Number of validation errors in source data
+    (essentially, ``len(validation_errors)`` presented separately
+    for easier querying).
+    """
+
+    validation_errors: List[ValidationErrorDict]
+    """List of validation errors in source data.
+
+    Some or (if the ``success`` attribute is ``True``) all
+    of the errors may have been resolved by normalizing loose YAML
+    and not be present at query time, but the information is still useful
+    for data source maintenance.
+    """
+
+
 # Sourced bibliographic data
 # ==========================
 
 class SourcedBibliographicItem(BaseModel):
     """Represents a base for sourced bibliographic item,
-    including validation errors and sourcing-related details
-    specific to the item.
+    including any validation errors
+    and sourcing-related details specific to the item.
 
     Generally do not instantiate directly,
     use an appropriate subclass instead.
@@ -86,8 +129,9 @@ class SourcedBibliographicItem(BaseModel):
     """Bibliographic data."""
 
     validation_errors: Optional[List[ValidationErrorDict]] = None
-    """Validation errors that occurred
-    while deserializing ``bibitem``’s data.
+    """Validation errors that were remaining
+    after deserializing ``bibitem``’s data
+    (even if loose YAML normalization took place).
     """
 
     details: Optional[str] = None

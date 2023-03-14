@@ -1,6 +1,6 @@
 import json
 import re
-from typing import List, Any
+from typing import List, Any, Optional
 from unittest import TestCase
 
 from django.core.management import call_command

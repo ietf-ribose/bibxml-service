@@ -48,15 +48,31 @@ __all__ = (
 log = logging.getLogger(__name__)
 
 
-def list_refs(dataset_id: str) -> QuerySet[RefData]:
+def list_refs(
+    dataset_id: str,
+    show_invalid: Optional[bool] = None,
+) -> QuerySet[RefData]:
     """Returns all indexed refs in a dataset.
 
     :param str dataset_id: given Relaton source ID
+
+    :param bool show_invalid:
+        Allows to filter items by presence of validation errors
+        in source data at indexing time.
+
+        - If True, show only items with validation errors in source data.
+        - If False, exclude items with validation errors in source data.
+
     :rtype: django.db.models.query.QuerySet[RefData]
     """
-    return (
-        RefData.objects.filter(dataset__iexact=dataset_id).
-        order_by('-latest_date'))
+    query = Q(dataset__iexact=dataset_id)
+
+    if show_invalid is True:
+        query = query & Q(validation_errors__count=1)
+    elif show_invalid is False:
+        query = query & Q(validation_errors__count=0)
+
+    return RefData.objects.filter(query).order_by('-latest_date')
 
 
 def list_doctypes() -> List[Tuple[str, str]]:
@@ -116,7 +132,7 @@ def search_refs_json_repr_match(text: str, limit=None) -> QuerySet[RefData]:
     #     RefData.objects.
     #     annotate(search=SearchVector(Cast('body', TextField()))).
     #     filter(search=SearchQuery(text, search_type='websearch')).
-    #     only('ref', 'dataset', 'body').
+    #     only('ref', 'dataset', 'body', 'indexed_at', 'dataset_version').
     #     order_by('-latest_date')[:limit])
 
     return (
@@ -124,7 +140,7 @@ def search_refs_json_repr_match(text: str, limit=None) -> QuerySet[RefData]:
         filter(
             body__iregex=r'(?i)%s'
             % get_fuzzy_match_regex(text, match_sep=r'.*?')).
-        only('ref', 'dataset', 'body').
+        only('ref', 'dataset', 'body', 'indexed_at', 'dataset_version').
         order_by('-latest_date')[:limit])
 
 
@@ -161,7 +177,7 @@ def search_refs_relaton_struct(
 
     return (
         RefData.objects.filter(id__in=query).
-        only('ref', 'dataset', 'body').
+        only('ref', 'dataset', 'body', 'indexed_at', 'dataset_version').
         order_by('-latest_date')[:limit])
 
 
@@ -336,7 +352,13 @@ def search_refs_relaton_field(
             config='english',
         ))
 
-    return qs.only('ref', 'dataset', 'body')[:limit]
+    return qs.only(
+        'ref',
+        'dataset',
+        'body',
+        'indexed_at',
+        'dataset_version',
+    )[:limit]
 
 
 def search_refs_docids(*ids: Union[DocID, str]) -> QuerySet[RefData]:
@@ -672,16 +694,16 @@ def build_search_results(
     results: List[FoundItem] = []
 
     for idx, ref in enumerate(refs):
+        body = ref.body or {}
         suitable_ids: List[DocID] = as_list([
             DocID(**id)
-            for id in ref.body.get('docid', [])
-            if 'id' in id and 'scope' not in id and 'type' in id
+            for id in body.get('docid', [])
+            if 'id' in id and not id.get('scope') and id.get('type')
         ])
 
         # TODO: Skip ``fallback_formattedref`` cases when #196 is confirmed
         fallback_formattedref = (
-            ref.body.
-            get('formattedref', {}).
+            (body.get('formattedref', None) or {}).
             get('content', None))
         if suitable_ids:
             primary_id = get_primary_docid(suitable_ids)
@@ -730,8 +752,8 @@ def get_indexed_item(
     bibitem, errors = construct_bibitem(ref.body, strict)
 
     return IndexedBibliographicItem(
-        source=get_source_meta(dataset_id),
-        indexed_object=get_indexed_object_meta(dataset_id, ref.ref),
+        source=get_source_meta(ref),
+        indexed_object=get_indexed_object_meta(ref),
         validation_errors=errors,
         bibitem=bibitem,
     )

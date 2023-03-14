@@ -1,0 +1,54 @@
+{% extends "browse/base.html" %}
+
+{% load relaton %}
+
+{% block title %}{{ block.super }} — Data sources{% endblock %}
+
+{% block header_extras %}
+  <div class="
+    {% include "_side_block_classes.html" %}
+    leading-tight flex flex-col p-4
+    bg-dark-700
+    text-dark-100
+    dark:text-inherit
+  ">
+    <h2>Indexed data sources</h2>
+  </div>
+
+  <nav class="
+    {% include "_side_block_classes.html" %}
+    overflow-hidden bg-sky-600 text-sky-100 flex flex-col flex-nowrap p-4
+  ">
+    {% include "browse/search_form_quick.html" with htmlclass="grow" control_htmlclass="py-2 px-3" only %}
+  </nav>
+
+  {{ block.super }}
+{% endblock %}
+
+{% block content %}
+  {{ block.super }}
+
+  {% for source, status in sources_with_statuses %}
+    {% with dataset_name=source.id|cut:"relaton-data-" %}
+      <article class="{% include "_list_item_classes.html" %} leading-tight">
+        <div class="block {% include "_list_item_inner_classes.html" %} px-4 overflow-hidden">
+          <a class="link font-bold" href="{% url "browse_dataset" dataset_name %}"
+            >{{ dataset_name }}</a>
+          <br />
+          <small class="text-xs break-all">
+            {{ status.status }}
+          </small>
+          <br />
+          <small class="text-xs break-all">
+            {{ status.item_count }}
+            items
+            {% if source.home_url %}
+              •
+              <a class="link" href="{{ source.home_url }}">source home</a>
+            {% endif %}
+          </small>
+        </div>
+      </article>
+    {% endwith %}
+  {% endfor %}
+{% endblock %}

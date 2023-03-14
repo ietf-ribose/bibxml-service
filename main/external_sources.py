@@ -51,7 +51,7 @@ def register_for_types(id: str, doc_types: Dict[str, bool]):
         return doc_types.get(docid.type, None) is not None
 
     def primary_for(docid: DocID) -> bool:
-        return doc_types.get(docid.type, None) == True
+        return doc_types.get(docid.type, None) is True
 
     def register_external_source(item_getter: Callable[
         [str, Optional[bool]], ExternalBibliographicItem
