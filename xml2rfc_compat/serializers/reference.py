@@ -140,6 +140,7 @@ def create_reference(item: BibliographicItem) -> _Element:
                 target = target.replace("http", "https").replace("dx.doi.org", "doi.org")
             ref.set('target', target)
 
+
     return ref
 
 
