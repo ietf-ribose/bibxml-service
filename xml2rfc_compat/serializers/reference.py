@@ -1,5 +1,6 @@
 import datetime
 from typing import List, Tuple, Optional, Union, cast
+from urllib.parse import urlparse
 
 from lxml import objectify
 from lxml.etree import _Element
@@ -106,12 +107,16 @@ def create_reference(item: BibliographicItem) -> _Element:
             func(docid)
             for func in DOCID_SERIES_EXTRACTORS
         ])
+
+    is_doi = False
     for series_info in list(dict.fromkeys(series)):
         if series_info is not None:
             ref.append(E.seriesInfo(
                 name=series_info[0],
                 value=series_info[1],
             ))
+            if series_info[0] == "DOI":
+                is_doi = True
 
     # Target, may be overwritten by callers
     try:
@@ -119,6 +124,13 @@ def create_reference(item: BibliographicItem) -> _Element:
     except ValueError:
         pass
     else:
+        if is_doi:
+            # https://github.com/ietf-tools/bibxml-service/issues/332
+            url_parse = urlparse(target)
+            if url_parse.hostname == "dx.doi.org":
+                target = target.replace("//dx.doi.org", "//doi.org")
+                if url_parse.scheme == "http":
+                    target = target.replace("http:", "https:")
         ref.set('target', target)
 
     # Anchor, may be overwritten by callers
