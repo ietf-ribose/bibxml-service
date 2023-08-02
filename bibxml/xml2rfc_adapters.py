@@ -12,6 +12,7 @@ from relaton.models import Link
 from relaton.models.bibdata import BibliographicItem, DocID, VersionInfo
 
 from bib_models.util import get_primary_docid
+from common.util import as_list
 from doi.crossref import get_bibitem as get_doi_bibitem
 from datatracker.internet_drafts import get_internet_draft
 from datatracker.internet_drafts import remove_version
@@ -629,7 +630,7 @@ class DoiAdapter(Xml2rfcAdapter):
             raise RefNotFoundError()
         else:
             # https://github.com/ietf-tools/bibxml-service/issues/332
-            link = cast(Iterable[Link], result.bibitem.link or [])
+            link = as_list(result.bibitem.link or [])
             for index, _ in enumerate(link):
                 parsed_link = urlparse(result.bibitem.link[index].content)
                 if parsed_link.netloc == "dx.doi.org":
