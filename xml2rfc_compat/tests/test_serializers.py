@@ -290,45 +290,6 @@ class SerializerTestCase(TestCase):
             for element in reference.getchildren()[0].getchildren()[2].keys()
         ))
 
-    def test_create_reference_for_DOI_entries_should_replace_target_URL(self):
-        # https://github.com/ietf-tools/bibxml-service/issues/332
-        data = copy(self.bibitem_reference_data)
-        URL = "http://dx.doi.org/10.1007/3-540-60865-6_43"
-        data["link"] = [
-            {
-                "content": URL,
-                "type": "DOI",
-            }
-        ]
-        new_bibitem = BibliographicItem(**data)
-        reference = create_reference(new_bibitem)
-        target = reference.keys()[0]
-        self.assertEqual(target, "target")
-        url_parse = urlparse(reference.get(target))
-        self.assertTrue(url_parse.scheme == "https")
-        self.assertTrue(url_parse.netloc == "doi.org")
-        self.assertEqual(
-            reference.get(target), URL.replace("http://dx.doi.org", "https://doi.org"))
-
-    def test_create_reference_for_not_DOI_entries_should_not_replace_target_URL(self):
-        # https://github.com/ietf-tools/bibxml-service/issues/332
-        data = copy(self.bibitem_reference_data)
-        URL = "http://not_doi.com/10.1007/60865-6_43"
-        url_parse = urlparse(URL)
-        data["link"] = [
-            {
-                "content": URL,
-                "type": "DOI",
-            }
-        ]
-        new_bibitem = BibliographicItem(**data)
-        reference = create_reference(new_bibitem)
-        target = reference.keys()[0]
-        self.assertEqual(target, "target")
-        target_parse = urlparse(reference.get(target))
-        self.assertTrue(target_parse.scheme == url_parse.scheme)
-        self.assertTrue(target_parse.netloc == url_parse.netloc)
-
     def test_build_refcontent_string_with_localitystack(self):
         title = "Container Title"
         volume = "1"

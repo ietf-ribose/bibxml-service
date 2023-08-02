@@ -1,9 +1,11 @@
+from urllib.parse import urlparse
+
 from django.test import TestCase
 
 from bib_models import BibliographicItem
 from bibxml.settings import XML2RFC_PATH_PREFIX
 from bibxml.xml2rfc_adapters import RfcAdapter, MiscAdapter, InternetDraftsAdapter, W3cAdapter, ThreeGPPAdapter, \
-    IeeeAdapter, IanaAdapter, RfcSubseriesAdapter, NistAdapter
+    IeeeAdapter, IanaAdapter, RfcSubseriesAdapter, NistAdapter, DoiAdapter
 from main.exceptions import RefNotFoundError
 
 
@@ -139,3 +141,16 @@ class XML2RFCAdaptersTestCase(TestCase):
         adapter = NistAdapter(self.dirname, "bibxml-nist", self.nist_ref+"A")
         with self.assertRaises(RefNotFoundError):
             adapter.resolve()
+
+    def test_doi(self):
+        adapter = DoiAdapter(self.dirname, "bibxml7", self.doi_ref)
+        bibitem = adapter.resolve()
+        self._assert_is_instance_of_bibliographicitem(bibitem)
+        self._assert_refs_equal(bibitem, self.doi_ref)
+
+    def test_doi_should_replace_target_URL(self):
+        adapter = DoiAdapter(self.dirname, "bibxml7", self.doi_ref)
+        bibitem = adapter.resolve()
+        for link in list(bibitem.link):
+            url_parse = urlparse(link.content)
+            self.assertNotEqual("http://dx.doi.org", f"{url_parse.scheme}://{url_parse.netloc}")
