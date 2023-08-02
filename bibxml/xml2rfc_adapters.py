@@ -632,9 +632,9 @@ class DoiAdapter(Xml2rfcAdapter):
             # https://github.com/ietf-tools/bibxml-service/issues/332
             link = as_list(result.bibitem.link or [])
             for index, _ in enumerate(link):
-                parsed_link = urlparse(result.bibitem.link[index].content)
+                parsed_link = urlparse(result.bibitem.link[index].content)  # type: ignore
                 if parsed_link.netloc == "dx.doi.org":
-                    result.bibitem.link[index].content = parsed_link._replace(scheme="https")._replace(netloc="doi.org").geturl()
+                    result.bibitem.link[index].content = parsed_link._replace(scheme="https")._replace(netloc="doi.org").geturl()  # type: ignore
             return result.bibitem
 
     def format_anchor(self) -> Optional[str]:

@@ -3,10 +3,8 @@ from copy import copy
 from io import StringIO
 from typing import Dict, List, Any, cast
 from unittest import TestCase
-from urllib.parse import urlparse
 
 from lxml import etree
-
 from relaton.models import (
     BibliographicItem,
     Contributor,

@@ -1,6 +1,5 @@
 import datetime
 from typing import List, Tuple, Optional, Union, cast
-from urllib.parse import urlparse
 
 from lxml import objectify
 from lxml.etree import _Element
@@ -107,7 +106,6 @@ def create_reference(item: BibliographicItem) -> _Element:
             func(docid)
             for func in DOCID_SERIES_EXTRACTORS
         ])
-
     for series_info in list(dict.fromkeys(series)):
         if series_info is not None:
             ref.append(E.seriesInfo(
