@@ -121,10 +121,6 @@ def create_reference(item: BibliographicItem) -> _Element:
     except ValueError:
         pass
     else:
-        # https://github.com/ietf-tools/bibxml-service/issues/332
-        url_parse = urlparse(target)
-        if url_parse.netloc == "dx.doi.org":
-            target = url_parse._replace(scheme="https")._replace(netloc="doi.org").geturl()
         ref.set('target', target)
 
     # Anchor, may be overwritten by callers

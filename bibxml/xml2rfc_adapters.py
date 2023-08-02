@@ -6,6 +6,7 @@ from typing import Optional, List, cast, Sequence
 import urllib
 import logging
 import re
+from urllib.parse import urlparse
 
 from relaton.models.bibdata import BibliographicItem, DocID, VersionInfo
 
@@ -626,6 +627,11 @@ class DoiAdapter(Xml2rfcAdapter):
         if not result:
             raise RefNotFoundError()
         else:
+            # https://github.com/ietf-tools/bibxml-service/issues/332
+            for index, _ in enumerate(list(result.bibitem.link)):
+                parsed_link = urlparse(result.bibitem.link[index].content)
+                if parsed_link.netloc == "dx.doi.org":
+                    result.bibitem.link[index].content = parsed_link._replace(scheme="https")._replace(netloc="doi.org").geturl()
             return result.bibitem
 
     def format_anchor(self) -> Optional[str]:
