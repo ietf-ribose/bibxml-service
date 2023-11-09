@@ -2,7 +2,7 @@ source "https://rubygems.org"
 
 gem 'relaton', "~>1.15.3"
 gem 'relaton-3gpp', "~>1.14.6"
-gem 'relaton-bib', "~>1.14.11"
+gem 'relaton-bib', "~>1.16.3"
 gem 'relaton-bipm', "~>1.14.11"
 gem 'relaton-bsi', "~>1.14.6"
 gem 'relaton-calconnect', "~>1.14.2"
